@@ -13,3 +13,9 @@
 #include <triqs/atom_diag/gf.hpp>
 
 #include <triqs/statistics/histograms.hpp>
+
+#include <mpi/mpi.hpp>
+#include <mpi/vector.hpp>
+#include <mpi/string.hpp>
+
+#include <itertools/itertools.hpp>
