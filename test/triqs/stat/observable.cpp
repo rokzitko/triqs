@@ -16,7 +16,7 @@ TEST(Observable, ConstructDouble) {
   int n_log_bins = 10, bin_size = 100, n_lin_bins = -1;
   acc_t a{0, n_log_bins, n_lin_bins, bin_size};
 
-  for (int i = 0; i <= 10; ++i) a << i;
+  for (int i = 0; i <= 1000; ++i) a << i;
 
   // FIXME: Does note exist anymore
   // auto av = a.empirical_average(world);
