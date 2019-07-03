@@ -216,39 +216,37 @@ namespace mpi {
   *   Custom mpi operator
   * ---------------------------------------------------------- */
 
-  // variable template that maps the function
-  // for the meaning of +[](...) , cf
-  // https://stackoverflow.com/questions/17822131/resolving-ambiguous-overload-on-function-pointer-and-stdfunction-for-a-lambda
-  template <typename T, T (*F)(T const &, T const &)>
-  MPI_User_function *_map_function = +[](void *in, void *inout, int *len, MPI_Datatype *) {
-    auto *inT    = static_cast<T *>(in);
-    auto *inoutT = static_cast<T *>(inout);
-    for (int i = 0; i < *len; ++i, ++inT, ++inoutT) { *inoutT = F(*inoutT, *inT); }
-  };
+  namespace details {
+    // variable template that maps the function
+    // for the meaning of +[](...) , cf
+    // https://stackoverflow.com/questions/17822131/resolving-ambiguous-overload-on-function-pointer-and-stdfunction-for-a-lambda
+    template <typename T, T (*F)(T const &, T const &)>
+    MPI_User_function *_map_function = +[](void *in, void *inout, int *len, MPI_Datatype *) {
+      auto *inT    = static_cast<T *>(in);
+      auto *inoutT = static_cast<T *>(inout);
+      for (int i = 0; i < *len; ++i, ++inT, ++inoutT) { *inoutT = F(*inoutT, *inT); }
+    };
 
-  // Maps addition
-  template <typename T>
-  MPI_User_function *_map_add = []() {
-    auto add = [](auto const &lhs, auto const &rhs) { return lhs + rhs; };
-    return _map_function<T, add>;
-  }();
-
-  /**
-   * @tparam T  Type on which the addition will operate
-   */
-  template <typename T> MPI_Op map_add() {
-    MPI_Op myOp;
-    MPI_Op_create(_map_add<T>, true, &myOp);
-    return myOp;
-  }
-
+    // Generic addition
+    template <typename T> T _generic_add(T const &lhs, T const &rhs) { return lhs + rhs; }
+  } // namespace details
   /**
    * @tparam T  Type on which the addition will operate
    * @tparam F  The C function to be mapped
    */
   template <typename T, T (*F)(T const &, T const &)> MPI_Op map_C_function() {
     MPI_Op myOp;
-    MPI_Op_create(_map_function<T, F>, true, &myOp);
+    MPI_Op_create(details::_map_function<T, F>, true, &myOp);
+    return myOp;
+  }
+
+  /**
+   * Map addition
+   * @tparam T  Type on which the addition will operate
+   */
+  template <typename T> MPI_Op map_add() {
+    MPI_Op myOp;
+    MPI_Op_create(details::_map_function<T, details::_generic_add<T>>, true, &myOp);
     return myOp;
   }
 

@@ -1,6 +1,8 @@
 #include <mpi/mpi.hpp>
 #include <gtest.h>
 
+#include <triqs/utility/macros.hpp>
+
 using namespace mpi;
 
 // a simple structure
@@ -77,21 +79,25 @@ TEST(MPI_CUSTOM, custom_type_op2) {
 
 //---------------------------------------
 
+// Tuple with elementwise addition on first and last component
+using tpl_type = std::tuple<int, long long, double>;
+tpl_type add_tpls(tpl_type const &lhs, tpl_type const &rhs) {
+  return std::make_tuple(std::get<0>(lhs) + std::get<0>(rhs), 0ll, std::get<2>(lhs) + std::get<2>(rhs));
+}
+
 TEST(MPI_CUSTOM, tuple_op) {
 
   communicator world;
   int rank = world.rank();
   int size = world.size();
 
-  // Tuple with elementwise addition on first and last component
-  using tpl_type = std::tuple<int, long long, double>;
-  auto add_tpls = [](tpl_type const & lhs, tpl_type const & rhs){ return std::make_tuple(std::get<0>(lhs) + std::get<0>(rhs), 0ll, std::get<2>(lhs) + std::get<2>(rhs)); };
-
   tpl_type a[10], answer[10];
 
   for (int u = 0; u < 10; ++u) {
-    std::get<0>(a[u])= rank + 1;
-    std::get<2>(a[u])= 3.0 * (rank + 1);
+    std::get<0>(a[u]) = rank + 1;
+    std::get<2>(a[u]) = 3.0 * (rank + 1);
+    TRIQS_PRINT(std::get<0>(a[u]));
+    TRIQS_PRINT(std::get<2>(a[u]));
   }
 
   int root = 0;
@@ -99,7 +105,11 @@ TEST(MPI_CUSTOM, tuple_op) {
   MPI_Reduce(a, answer, 10, mpi_type<tpl_type>::get(), mpi::map_C_function<tpl_type, add_tpls>(), root, MPI_COMM_WORLD);
 
   if (rank == root)
-    for (int u = 0; u < 10; ++u) { ASSERT_NEAR(std::get<0>(answer[u]) + std::get<2>(answer[u]), 2 * size * (size + 1), 1.e-14); }
+    for (int u = 0; u < 10; ++u) {
+    TRIQS_PRINT(std::get<0>(answer[u]));
+    TRIQS_PRINT(std::get<2>(answer[u]));
+    ASSERT_NEAR(std::get<0>(answer[u]) + std::get<2>(answer[u]), 2 * size * (size + 1), 1.e-14);
+    }
 }
 
 MPI_TEST_MAIN;
